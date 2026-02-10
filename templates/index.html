@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SplitMint Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>SplitMint Groups</h1>
+        <form action="/add_group" method="POST">
+            <input type="text" name="group_name" placeholder="Group Name" required>
+            <button type="submit">Create</button>
+        </form>
+        <hr>
+        <h3>Active Groups:</h3>
+        <ul>
+            {% for group in groups %}
+            <li>
+                <a href="/group/{{ group.id }}"><strong>{{ group.name }}</strong></a> 
+                ({{ group.participants|length }} members)
+                <a href="/delete_group/{{ group.id }}" style="color: red; margin-left: 10px;">[Delete]</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SplitMint - {{ group.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>{{ group.name }}</h1>
+        <a href="/">← Back to Dashboard</a>
+        <hr>
+
+        <div class="section">
+            <h3>Participants (Max 4)</h3>
+            <form action="/add_participant/{{ group.id }}" method="POST">
+                <input type="text" name="name" placeholder="Name" required>
+                <input type="color" name="color" value="#007bff">
+                <button type="submit" {{ 'disabled' if group.participants|length >= 4 else '' }}>Add</button>
+            </form>
+            <ul>
+                {% for p in group.participants %}
+                <li style="color: {{ p.color or '#000000' }}; font-weight: bold;">
+                    {{ p.name }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <hr>
+
+        <div class="section">
+            <h3>Expenses</h3>
+            <form method="GET">
+                <input type="text" name="search" placeholder="Search...">
+                <button type="submit">Search</button>
+            </form>
+
+            <form action="/add_expense/{{ group.id }}" method="POST">
+                <input type="text" name="description" placeholder="Lunch, Taxi, etc." required>
+                <input type="number" name="amount" step="0.01" required>
+                <select name="payer_id">
+                    {% for p in group.participants %}
+                        <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Add Expense</button>
+            </form>
+
+            <table>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Paid By</th>
+                </tr>
+                {% for e in expenses %}
+                <tr>
+                    <td>{{ e.description }}</td>
+                    <td>₹{{ e.amount }}</td>
+                    <td>{{ e.payer.name }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <hr>
+
+        <div class="section settlement-box" style="background-color: #e6fffa; padding: 15px; border-radius: 8px;">
+            <h3>Settlement Suggestions</h3>
+
+            {% set debtors = [] %}
+            {% set creditors = [] %}
+
+            {% for name, bal in balances.items() %}
+                {% if bal < -0.01 %}
+                    {% do debtors.append({'name': name, 'amt': bal|abs}) %}
+                {% elif bal > 0.01 %}
+                    {% do creditors.append({'name': name, 'amt': bal}) %}
+                {% endif %}
+            {% endfor %}
+
+            {% if not debtors and not creditors %}
+                <p>Everything is settled!</p>
+            {% else %}
+                <ul>
+                {% for d in debtors %}
+                    {% for c in creditors %}
+                        {% if d.amt > 0.01 and c.amt > 0.01 %}
+                            {% set settle = [d.amt, c.amt]|min %}
+                            <li>
+                                <strong>{{ d.name }}</strong> owes
+                                <strong>{{ c.name }}</strong>:
+                                ₹{{ settle|round(2) }}
+                            </li>
+                            {% do d.update({'amt': d.amt - settle}) %}
+                            {% do c.update({'amt': c.amt - settle}) %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
